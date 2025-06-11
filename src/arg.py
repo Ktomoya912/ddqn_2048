@@ -3,7 +3,7 @@ import argparse
 arg_keys = []
 parser = argparse.ArgumentParser(description="2048 DDQN")
 game_conf_group = parser.add_argument_group("ゲーム設定")
-game_conf_group.add_argument("-m", "--model", type=int, help="モデルの選択")
+game_conf_group.add_argument("-m", "--model", type=str, help="モデルの選択")
 game_conf_group.add_argument("-s", "--seed", type=int, help="シード値")
 game_conf_group.add_argument(
     "-r",
@@ -44,6 +44,12 @@ parser.add_argument(
     "--load_model",
     action="store_true",
     help="学習済みモデルをロードする",
+)
+parser.add_argument(
+    "--ddqn",
+    type=int,
+    help="0: ゲームごとに使用するモデルを切り替える, 1: ランダムにモデルを切り替える, 2: グローバルで切り替える",
+    default=0,
 )
 
 args = parser.parse_args()  # 4. 引数を解析

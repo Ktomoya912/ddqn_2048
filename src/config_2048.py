@@ -56,7 +56,7 @@ def get_model_name():
 start_time = datetime.now()
 TRAIN_COUNT = args.train_count
 TIME_LIMIT = timedelta(hours=args.hours) if args.hours > 0 else timedelta(days=1)
-MODEL_DIR = Path("model")
+MODEL_DIR = Path("models")
 MODEL_DIR.mkdir(exist_ok=True)
 LOG_PATH = Path(f"log/{start_time.strftime('%Y%m%dT%H%M%S')}_{get_model_name()}.log")
 LOG_PATH.parent.mkdir(exist_ok=True)

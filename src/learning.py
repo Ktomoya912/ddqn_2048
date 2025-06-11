@@ -28,7 +28,7 @@ train_queue = Queue(4096)  # 学習データをスレッドから受け取るキ
 stop_event = threading.Event()  # スレッド終了用に使用
 bat_size = 1024  # バッチサイズ
 criterion = nn.MSELoss()  # 損失関数
-optimizer = optim.Adam(cfg.MODEL.parameters(), lr=0.001)  # 最適化アルゴリズムの選択
+optimizer = optim.Adam(MODEL_1.parameters(), lr=0.001)  # 最適化アルゴリズムの選択
 logger = logging.getLogger(__name__)
 MODEL_TYPE = 1
 
@@ -102,10 +102,10 @@ def train(records, count: int = 1):
     # お互いのモデルに対して学習を行う
     if inputs_1:
         _train(MODEL_2, inputs_1, targets_1)
-        logger.info(f"train [model1] {count * len(targets_1)} board")
+        logger.info(f"train [model2] {count * len(targets_1)} board")
     if inputs_2:
         _train(MODEL_1, inputs_2, targets_2)
-        logger.info(f"train [model2] {count * len(targets_2)} board")
+        logger.info(f"train [model1] {count * len(targets_2)} board")
 
 
 def put_queue(board: np.ndarray, value: torch.Tensor, model_type: int):

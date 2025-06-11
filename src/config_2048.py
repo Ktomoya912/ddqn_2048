@@ -54,7 +54,6 @@ def get_model_name():
 
 
 start_time = datetime.now()
-TRAIN_COUNT = args.train_count
 TIME_LIMIT = timedelta(hours=args.hours) if args.hours > 0 else timedelta(days=1)
 MODEL_DIR = Path("models")
 MODEL_DIR.mkdir(exist_ok=True)

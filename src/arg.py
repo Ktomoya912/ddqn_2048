@@ -3,7 +3,9 @@ import argparse
 arg_keys = []
 parser = argparse.ArgumentParser(description="2048 DDQN")
 game_conf_group = parser.add_argument_group("ゲーム設定")
-game_conf_group.add_argument("-m", "--model", type=str, help="モデルの選択")
+game_conf_group.add_argument(
+    "-m", "--model", type=str, help="モデルの選択", required=True
+)
 game_conf_group.add_argument("-s", "--seed", type=int, help="シード値")
 game_conf_group.add_argument(
     "-r",

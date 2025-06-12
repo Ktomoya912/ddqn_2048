@@ -283,8 +283,9 @@ def main():
     initial_board = [0, 0, 0, 0, 0, 1, 0, 0, 1]
     for i in [1, 2]:
         model = MAIN_NETWORK if i == 1 else TARGET_NETWORK
-        torch.save(model.state_dict(), model_path.with_stem(f"[{i}]_{model_path.stem}"))
-        logger.info(f"save {model_path.name} {train_count=}")
+        save_name = model_path.with_stem(f"[{i}]_{model_path.stem}")
+        torch.save(model.state_dict(), save_name)
+        logger.info(f"save {save_name.name} {train_count=}")
         logger.info(f"評価値: {get_eval(initial_board, model)}")
     stop_event.set()
     logger.info("stop event set")

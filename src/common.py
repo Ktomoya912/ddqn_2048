@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import torch
 
-from config_2048 import DEVICE, MAIN_NETWORK, TARGET_NETWORK
+from config_2048 import DEVICE
 from game_2048_3_3 import State
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def write_make_input(board: np.ndarray, x: torch.Tensor):
         x[board[j] * 9 + j] = 1
 
 
-def get_values(canmov: list[bool], bd: State):
+def get_values(canmov: list[bool], bd: State, packs: list):
     """移動可能な方向の評価値を計算する。
     移動可能な方向に対して、評価値を計算し、最大の評価値とその方向を返す。
 
@@ -33,8 +33,8 @@ def get_values(canmov: list[bool], bd: State):
     Returns:
         tuple: メインネットワークの評価値、ターゲットネットワークの評価値
     """
-    MAIN_NETWORK.eval()
-    TARGET_NETWORK.eval()
+    packs[0]["model"].eval()
+    packs[1]["model"].eval()
     inputs = torch.zeros(4, 99, device="cpu")
     sub_list = []
     for i in range(4):
@@ -43,8 +43,8 @@ def get_values(canmov: list[bool], bd: State):
         sub_list.append(copy_bd.score - bd.score)
         write_make_input(copy_bd.board, inputs[i, :])
     inputs = inputs.to(DEVICE)
-    main_result: torch.Tensor = MAIN_NETWORK.forward(inputs)
-    target_result: torch.Tensor = TARGET_NETWORK.forward(inputs)
+    main_result: torch.Tensor = packs[0]["model"].forward(inputs)
+    target_result: torch.Tensor = packs[1]["model"].forward(inputs)
     main_value = [0.0] * 4
     target_value = [0.0] * 4
     for i in range(4):

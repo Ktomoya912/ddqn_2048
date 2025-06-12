@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import torch
 
-from config_2048 import DEVICE, MODEL_1, MODEL_2
+from config_2048 import DEVICE, MAIN_NETWORK, TARGET_NETWORK
 from game_2048_3_3 import State
 
 logger = logging.getLogger(__name__)
@@ -22,12 +22,19 @@ def write_make_input(board: np.ndarray, x: torch.Tensor):
         x[board[j] * 9 + j] = 1
 
 
-def max_mov(canmov: list[bool], bd: State, value: list, model_type: int):
-    if model_type == 1:
-        model = MODEL_1
-    elif model_type == 2:
-        model = MODEL_2
-    model.eval()  # モデルを評価モードに設定
+def get_values(canmov: list[bool], bd: State):
+    """移動可能な方向の評価値を計算する。
+    移動可能な方向に対して、評価値を計算し、最大の評価値とその方向を返す。
+
+    Args:
+        canmov (list[bool]): 移動可能な方向のリスト
+        bd (State): ゲームの状態を表すStateオブジェクト
+
+    Returns:
+        tuple: メインネットワークの評価値、ターゲットネットワークの評価値
+    """
+    MAIN_NETWORK.eval()
+    TARGET_NETWORK.eval()
     inputs = torch.zeros(4, 99, device="cpu")
     sub_list = []
     for i in range(4):
@@ -36,17 +43,15 @@ def max_mov(canmov: list[bool], bd: State, value: list, model_type: int):
         sub_list.append(copy_bd.score - bd.score)
         write_make_input(copy_bd.board, inputs[i, :])
     inputs = inputs.to(DEVICE)
-    tmp: torch.Tensor = model.forward(inputs)
-    debug_list = []
+    main_result: torch.Tensor = MAIN_NETWORK.forward(inputs)
+    target_result: torch.Tensor = TARGET_NETWORK.forward(inputs)
+    main_value = [0.0] * 4
+    target_value = [0.0] * 4
     for i in range(4):
         if canmov[i]:
-            # log.debug(f"can move to {i}")
-            value[i] = float(tmp.data[i]) + sub_list[i]
-            debug_list.append({"sub": sub_list[i], "bd": copy_bd.board})
-            # log.debug(f"評価値 : {value[i]}")
+            main_value[i] = float(main_result.data[i]) + sub_list[i]
+            target_value[i] = float(target_result.data[i]) + sub_list[i]
         else:
-            value[i] = -1e10
-            tmp.data[i] = -1e10
-    logger.debug(f"{model_type=} {debug_list=}")
-    max_index = np.argmax(value)
-    return max_index, value[max_index], tmp.data
+            main_value[i] = -1e10
+            main_result.data[i] = -1e10
+    return main_value, target_value

@@ -74,11 +74,8 @@ for key, value in args._get_kwargs():
     logger.info(f"{key} : {value}")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger.info(f"Using device: {DEVICE}")
-MODEL_1: torch.nn.Module = modeler.Model().to(DEVICE)  # noqa: F821
-MODEL_2: torch.nn.Module = modeler2.Model().to(DEVICE)  # noqa: F821
+MAIN_NETWORK: torch.nn.Module = modeler.Model().to(DEVICE)  # noqa: F821
+TARGET_NETWORK: torch.nn.Module = modeler2.Model().to(DEVICE)  # noqa: F821
 if args.load_model:
     if new_state_dict := get_trained_model(LOG_PATH, DEVICE):
-        MODEL_1.load_state_dict(new_state_dict)
-if torch.cuda.is_available():
-    MODEL_1 = torch.nn.DataParallel(MODEL_1)
-    MODEL_2 = torch.nn.DataParallel(MODEL_2)
+        MAIN_NETWORK.load_state_dict(new_state_dict)

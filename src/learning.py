@@ -114,7 +114,7 @@ def train(records: list[dict], pack: dict, count: int = 1):
 
 def put_queue(board: np.ndarray, main_value: float, target_value: float, packs):
     board_cp = board.copy()
-    queue = packs[1]["queue"]
+    queue = packs[0]["queue"]
     if args.symmetry:
         bd_list: list[np.ndarray] = [board]
         for _ in range(3):
@@ -202,7 +202,7 @@ def play_game(thread_id: int):
             bd = State()
             bd.initGame()
             turn = 0
-            packs.reverse()
+            # packs.reverse()
             for count in range(10_000):
                 last_board = None
                 init_eval_1 = 0
@@ -262,11 +262,19 @@ def get_eval(board: np.ndarray, model: torch.nn.Module):
 def batch_trainer(pack: dict):
     train_count = 0
     records = []
+    # 重み更新の頻度
+    update_target_every = 10
     while not stop_event.is_set():
         train_count += 1
         while len(records) != bat_size:
             records.append(pack["queue"].get())
         train(records, pack, train_count)
+
+        if train_count % update_target_every == 0:
+            TARGET_NETWORK.load_state_dict(MAIN_NETWORK.state_dict())
+            logger.info(
+                f"Update target network at train_count={train_count}, {pack['name']}"
+            )
 
         records.clear()
     return train_count
@@ -290,12 +298,12 @@ def save_models():
 
 
 def main():
-    executor = ThreadPoolExecutor(max_workers=tasks + 2)
+    executor = ThreadPoolExecutor(max_workers=tasks + 1)
     for i in range(tasks):
         executor.submit(play_game, i)
 
     executor.submit(batch_trainer, pack_main)
-    executor.submit(batch_trainer, pack_target)
+    # executor.submit(batch_trainer, pack_target)
 
     start_time = datetime.now()
     while datetime.now() - start_time < cfg.TIME_LIMIT:
@@ -304,14 +312,13 @@ def main():
     stop_event.set()
     save_models()
     clear_queues()
-    executor.shutdown()
     logger.info("All threads have been successfully terminated.")
-    return 0
+    return executor
 
 
 if __name__ == "__main__":
     try:
-        main()
+        executor = main()
     except Exception as e:
         logger.exception(e)
         stop_event.set()
@@ -321,3 +328,7 @@ if __name__ == "__main__":
         stop_event.set()
         clear_queues()
         save_models()
+    finally:
+        if "executor" in locals():
+            executor.shutdown(wait=True)
+        logger.info("Program terminated gracefully.")

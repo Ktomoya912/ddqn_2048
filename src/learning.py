@@ -214,13 +214,12 @@ def play_game(thread_id: int):
                     main_values, target_values = get_values(canmov, copy_bd, packs)
                     # main_valuesから最大の評価値を持つインデックスを取得
                     main_max_index = np.argmax(main_values)
-                    target_value = target_values[main_max_index]
                     bd.play(main_max_index)
                     if last_board is not None:
                         put_queue(
                             last_board.copy(),
                             main_value=main_values[main_max_index],
-                            target_value=target_value,
+                            target_value=target_values[main_max_index],
                             packs=packs,
                         )
                     last_board = bd.clone().board

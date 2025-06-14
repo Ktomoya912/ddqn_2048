@@ -68,7 +68,7 @@ def parse_path(path: Path) -> LogFile:
 
 def parse_line(line: str):
     match = re.match(
-        r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}):INFO:GAMEOVER:\s+thread_id=(\d+)\s+count=(\d+)\s+bd\.score=(\d+)\s+turn=(\d+)\s+queue_size=(\d+)\s+init_eval_1=([\d.]+)\s+init_eval_2=([\d.]+)",
+        r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}):INFO:GAMEOVER:\s+thread_id=(\d+)\s+count=(\d+)\s+bd\.score=(\d+)\s+turn=(\d+).*queue_size=(\d+)\s+init_eval_1=([\d.]+)\s+init_eval_2=([\d.]+)",
         line,
     )
     if match:

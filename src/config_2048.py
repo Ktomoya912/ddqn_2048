@@ -21,13 +21,14 @@ except ImportError as e:
     ) from e
 
 
-def get_trained_model(log_path: Path, device) -> OrderedDict:
-    pat = r"\d{8}T\d{6}_"
+def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
+    pat = r"^.+\d{8}T\d{6}_"
     config_stem = re.sub(pat, "", log_path.stem)
     target = [
         model_file
         for model_file in Path("model").glob("*.pth")
-        if re.sub(pat, "", model_file.stem).startswith(config_stem)
+        if re.sub(pat, "", model_file.stem).endswith(config_stem)
+        and model_file.stem.startswith(type_)
     ]
     if not target:
         logger.warning(f"Model file not found: {config_stem}")
@@ -77,5 +78,7 @@ logger.info(f"Using device: {DEVICE}")
 MAIN_NETWORK: torch.nn.Module = modeler.Model().to(DEVICE)  # noqa: F821
 TARGET_NETWORK: torch.nn.Module = modeler2.Model().to(DEVICE)  # noqa: F821
 if args.load_model:
-    if new_state_dict := get_trained_model(LOG_PATH, DEVICE):
-        MAIN_NETWORK.load_state_dict(new_state_dict)
+    if main_dict := get_trained_model(LOG_PATH, DEVICE, "main"):
+        MAIN_NETWORK.load_state_dict(main_dict)
+    if target_dict := get_trained_model(LOG_PATH, DEVICE, "target"):
+        MAIN_NETWORK.load_state_dict(target_dict)

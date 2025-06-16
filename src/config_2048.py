@@ -22,7 +22,7 @@ except ImportError as e:
 
 
 def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
-    pat = r"^.+\d{8}T\d{6}_"
+    pat = r"(\w+_)*\d{8}T\d{6}_"
     config_stem = re.sub(pat, "", log_path.stem)
     target = [
         model_file

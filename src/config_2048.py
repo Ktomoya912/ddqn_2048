@@ -81,4 +81,4 @@ if args.load_model:
     if main_dict := get_trained_model(LOG_PATH, DEVICE, "main"):
         MAIN_NETWORK.load_state_dict(main_dict)
     if target_dict := get_trained_model(LOG_PATH, DEVICE, "target"):
-        MAIN_NETWORK.load_state_dict(target_dict)
+        TARGET_NETWORK.load_state_dict(target_dict)

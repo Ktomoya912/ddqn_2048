@@ -26,7 +26,7 @@ def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
     config_stem = re.sub(pat, "", log_path.stem)
     target = [
         model_file
-        for model_file in Path("model").glob("*.pth")
+        for model_file in MODEL_DIR.glob("*.pth")
         if re.sub(pat, "", model_file.stem).endswith(config_stem)
         and model_file.stem.startswith(type_)
     ]

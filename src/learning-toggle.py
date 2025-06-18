@@ -114,7 +114,7 @@ def train(records: list[dict], pack: dict, count: int = 1):
 
 def put_queue(board: np.ndarray, main_value: float, target_value: float, packs):
     board_cp = board.copy()
-    queue = packs[1]["queue"]
+    queue = packs[0]["queue"]
     if args.symmetry:
         bd_list: list[np.ndarray] = [board]
         for _ in range(3):
@@ -214,13 +214,12 @@ def play_game(thread_id: int):
                     main_values, target_values = get_values(canmov, copy_bd, packs)
                     # main_valuesから最大の評価値を持つインデックスを取得
                     main_max_index = np.argmax(main_values)
-                    target_value = target_values[main_max_index]
                     bd.play(main_max_index)
                     if last_board is not None:
                         put_queue(
                             last_board.copy(),
                             main_value=main_values[main_max_index],
-                            target_value=target_value,
+                            target_value=target_values[main_max_index],
                             packs=packs,
                         )
                     last_board = bd.clone().board
@@ -281,8 +280,8 @@ def clear_queues():
 
 
 def save_models():
-    main_model_path = cfg.MODEL_DIR / f"main_{cfg.LOG_PATH.stem}.pth"
-    target_model_path = cfg.MODEL_DIR / f"target_{cfg.LOG_PATH.stem}.pth"
+    main_model_path = cfg.MODEL_DIR / f"main_{cfg.LOG_PATH.stem}_toggle.pth"
+    target_model_path = cfg.MODEL_DIR / f"target_{cfg.LOG_PATH.stem}_toggle.pth"
 
     torch.save(MAIN_NETWORK.state_dict(), main_model_path)
     logger.info(f"save {main_model_path.name}")

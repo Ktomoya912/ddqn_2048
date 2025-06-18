@@ -40,8 +40,37 @@ uv run src/learning.py --help
 
 ## 仕様技術
 
-| カテゴリ       | 名前    |
-| -------------- | ------- |
-| 言語           | Python  |
-| フレームワーク | PyTorch |
-| パッケージ管理 | uv      |
+| category        | name    |
+| --------------- | ------- |
+| language        | Python  |
+| framework       | PyTorch |
+| package manager | uv      |
+
+## Training Method
+
+### learning.py
+
+DDQN の論文の手法をそのまま実装。
+
+**メインネットワーク**:
+
+- メインネットワークの評価値に基づいて行動を選択
+- 選択した行動のターゲットネットワークの評価値をキューに追加
+- キューからターゲット評価値を取得
+- ターゲット評価値を使ってメインネットワークを学習
+
+**ターゲットネットワーク**:
+
+- 一定期間（[period]ステップ）ごとにメインネットワークの重みをコピー
+- 安定した学習のための目標値を提供
+
+### learning-toggle.py
+
+ゲームごとに学習するモデルとキューを切り替えて相手の評価値を学習する方法を実装。
+
+| Pack1                          | Pack2                          |
+| ------------------------------ | ------------------------------ |
+| play from Pack1value           | play from Pack2value           |
+| put Pack2value Pack1Queue      | put Pack1value Pack2Queue      |
+| get Pack2value from Pack1Queue | get Pack1value from Pack2Queue |
+| learn from Pack2value          | learn from Pack1value          |

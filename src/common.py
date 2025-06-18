@@ -45,13 +45,11 @@ def get_values(canmov: list[bool], bd: State, packs: list):
     inputs = inputs.to(DEVICE)
     main_result: torch.Tensor = packs[0]["model"].forward(inputs)
     target_result: torch.Tensor = packs[1]["model"].forward(inputs)
-    main_value = [0.0] * 4
-    target_value = [0.0] * 4
+    main_value = [-1e10] * 4
+    target_value = [-1e10] * 4
     for i in range(4):
         if canmov[i]:
             main_value[i] = float(main_result.data[i]) + sub_list[i]
             target_value[i] = float(target_result.data[i]) + sub_list[i]
-        else:
-            main_value[i] = -1e10
-            main_result.data[i] = -1e10
+
     return main_value, target_value

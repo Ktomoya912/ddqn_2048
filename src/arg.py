@@ -53,6 +53,12 @@ parser.add_argument(
     help="0: ゲームごとに使用するモデルを切り替える, 1: ランダムにモデルを切り替える, 2: グローバルで切り替える",
     default=0,
 )
+parser.add_argument(
+    "--turget_update_freq",
+    type=int,
+    help="ターゲットネットワークの更新頻度",
+    default=10,
+)
 
 args = parser.parse_args()  # 4. 引数を解析
 for action in game_conf_group._group_actions:

@@ -263,7 +263,7 @@ def batch_trainer(pack: dict):
     train_count = 0
     records = []
     # 重み更新の頻度
-    update_target_every = args.turget_update_freq
+    update_target_every = args.target_update_freq
     while not stop_event.is_set():
         train_count += 1
         while len(records) != bat_size:

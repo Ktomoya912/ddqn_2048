@@ -54,7 +54,7 @@ parser.add_argument(
     default=0,
 )
 parser.add_argument(
-    "--turget_update_freq",
+    "--target_update_freq",
     type=int,
     help="ターゲットネットワークの更新頻度",
     default=10,

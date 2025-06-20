@@ -40,6 +40,7 @@ class LogFile:
                         "time": parsed["time"],
                         "score": parsed["score"],
                         "init_eval": parsed["init_eval"],
+                        "init_eval_2": parsed["init_eval_2"],
                     }
                 )
         if not result_list:
@@ -98,11 +99,13 @@ def aggregate_by_interval(data, interval):
         entries = grouped[bucket]
         scores = [e["score"] for e in entries]
         init_evals = [e["init_eval"] for e in entries]
+        init_eval_2 = [e["init_eval_2"] for e in entries]
         result.append(
             {
                 "interval": int(bucket * interval),
                 "score": np.mean(scores),
                 "init_eval": np.mean(init_evals),
+                "init_eval_2": np.mean(init_eval_2),
             }
         )
 
@@ -131,6 +134,7 @@ for i, (label, logs) in enumerate(structured_logs.items()):
                     + (timedelta(hours=12).seconds // interval),
                     "score": line["score"],
                     "init_eval": line["init_eval"],
+                    "init_eval_2": line["init_eval_2"],
                 }
                 for line in log2.lines
             ],
@@ -143,6 +147,7 @@ for i, (label, logs) in enumerate(structured_logs.items()):
     x = [entry["interval"] / 3600 for entry in log_agg]
     y_score = [entry["score"] for entry in log_agg]
     y_init_eval = [entry["init_eval"] for entry in log_agg]
+    y_init_eval_2 = [entry["init_eval_2"] for entry in log_agg]
     plt.plot(
         x,
         y_score,
@@ -156,6 +161,13 @@ for i, (label, logs) in enumerate(structured_logs.items()):
         label=label + "_init_eval",
         color="C" + str(i),
         linestyle="--",
+    )
+    plt.plot(
+        x,
+        y_init_eval_2,
+        label=label + "_init_eval_2",
+        color="C" + str(i),
+        linestyle=":",
     )
     plt.xlabel("Time (hours)")
     plt.ylabel("Score")

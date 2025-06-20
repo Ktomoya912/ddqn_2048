@@ -1,5 +1,6 @@
 import logging
 import re
+import sys
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -54,11 +55,14 @@ def get_model_name():
     return "".join(models_names)
 
 
+script_name = Path(sys.argv[0]).name
 start_time = datetime.now()
 TIME_LIMIT = timedelta(hours=args.hours) if args.hours > 0 else timedelta(days=1)
 MODEL_DIR = Path("models")
 MODEL_DIR.mkdir(exist_ok=True)
 LOG_PATH = Path(f"log/{start_time.strftime('%Y%m%dT%H%M%S')}_{get_model_name()}.log")
+if script_name != "learning.py":
+    LOG_PATH = LOG_PATH.with_name(f"[{script_name}]_{LOG_PATH.name}")
 LOG_PATH.parent.mkdir(exist_ok=True)
 FORMAT = "%(asctime)s:%(levelname)s:%(message)s"
 logging.basicConfig(

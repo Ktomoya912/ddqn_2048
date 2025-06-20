@@ -81,7 +81,7 @@ def main():
     stop_event.set()
     logger.info(f"Played {games_played} games.")
 
-    scores = [game_data["score"] for game_data in data]
+    scores = [game_data["gameover_score"] for game_data in data]
     try:
         with (
             open(SAVE_DIR / "state.txt", "w") as f_state,

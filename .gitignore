@@ -17,3 +17,4 @@ wheels/
 
 # 個人用スクリプト
 get_log.py
+board_data/*

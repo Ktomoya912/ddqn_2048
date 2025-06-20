@@ -43,29 +43,28 @@ def play_game(thread_id: int):
             canmov = [bd.canMoveTo(i) for i in range(4)]
             copy_bd = bd.clone()
             main_values, target_values = get_values(canmov, copy_bd, packs)
-            progress = calc_progress(bd.board)
+            progress = calc_progress(bd.board.copy())
             # main_valuesから最大の評価値を持つインデックスを取得
             main_max_index = np.argmax(main_values)
 
-            states.append((bd.board, progress))
+            states.append((bd.board.copy(), progress))
             evals.append((main_values, progress))
 
             bd.play(main_max_index)
-            after_states.append((bd.board, calc_progress(bd.board)))
+            after_states.append((bd.board.copy(), calc_progress(bd.board.copy())))
             bd.putNewTile()
 
-        gameover_txt = f"gameover_turn: {turn}; progress: {calc_progress(bd.board)}; score: {bd.score}"
         queue.put(
             {
                 "thread_id": thread_id,
                 "states": states,
                 "after_states": after_states,
                 "evals": evals,
-                "gameover_txt": gameover_txt,
-                "score": bd.score,
+                "gameover_turn": turn,
+                "gameover_progress": calc_progress(bd.board),
+                "gameover_score": bd.score,
             }
         )
-        logger.info(f"Thread {thread_id} played game {games_played}: {gameover_txt}")
 
 
 def main():
@@ -90,11 +89,11 @@ def main():
             open(SAVE_DIR / "after-state.txt", "w") as f_after,
         ):
 
-            for game_data in data:
+            for i, game_data in enumerate(data):
                 states = game_data["states"]
                 after_states = game_data["after_states"]
                 evals = game_data["evals"]
-                gameover_info = game_data["gameover_txt"]
+                gameover_info = f"gameover_turn: {game_data['gameover_turn']}; game: {i+1}; progress: {game_data['gameover_progress']}; score: {game_data['gameover_score']}"
 
                 state_strs = []
                 eval_strs = []

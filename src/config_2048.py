@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import torch
-from rich.logging import RichHandler
 
 from arg import args, game_conf
 
@@ -70,7 +69,8 @@ logging.basicConfig(
     format=FORMAT,
     datefmt="%Y-%m-%dT%H:%M:%S",
     handlers=[
-        RichHandler(show_time=False, show_level=False, show_path=False),
+        # RichHandler(show_time=False, show_level=False, show_path=False),
+        logging.StreamHandler(),
         logging.FileHandler(LOG_PATH, encoding="utf-8"),
     ],
 )

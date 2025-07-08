@@ -121,26 +121,28 @@ for log_file in log_files:
     structured_logs[log_file.label].append(log_file)
 
 for i, (label, logs) in enumerate(structured_logs.items()):
-    if len(logs) == 0 or len(logs) > 2:
+    if len(logs) == 0:
         raise ValueError(f"Invalid log file: {label}")
     logs.sort(key=lambda x: x.time)
-    if len(logs) == 2:
-        log1, log2 = logs
-        log1_agg = aggregate_by_interval(log1.lines, interval)
-        log2_agg = aggregate_by_interval(
-            [
-                {
-                    "rel_time": line["rel_time"]
-                    + (timedelta(hours=12).seconds // interval),
-                    "score": line["score"],
-                    "init_eval": line["init_eval"],
-                    "init_eval_2": line["init_eval_2"],
-                }
-                for line in log2.lines
-            ],
-            interval,
-        )
-        log_agg = log1_agg + log2_agg
+    if len(logs) >= 2:
+        log_agg = []
+        for i, log in enumerate(logs):
+            log_agg.extend(
+                aggregate_by_interval(
+                    [
+                        {
+                            "rel_time": line["rel_time"]
+                            + (timedelta(hours=12).seconds // interval) * i,
+                            "score": line["score"],
+                            "init_eval": line["init_eval"],
+                            "init_eval_2": line["init_eval_2"],
+                        }
+                        for line in log.lines
+                    ],
+                    interval,
+                )
+            )
+        print(log_agg[-1])
     else:
         log = logs[0]
         log_agg = aggregate_by_interval(log.lines, interval)
@@ -174,7 +176,7 @@ for i, (label, logs) in enumerate(structured_logs.items()):
     plt.title("Average Score over Time")
     plt.legend()
 plt.ylim(0, 6500)
-plt.xlim(0, 24)
+# plt.xlim(0, 24)
 plt.grid()
 save_dir = Path() / "dist"
 save_dir.mkdir(parents=True, exist_ok=True)

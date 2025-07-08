@@ -23,7 +23,7 @@ if args.seed is not None:
     torch.manual_seed(args.seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
-tasks = os.cpu_count() - 2
+tasks = min(os.cpu_count() - 2, 6)
 stop_event = threading.Event()  # スレッド終了用に使用
 bat_size = 1024  # バッチサイズ
 criterion = nn.MSELoss()  # 損失関数
@@ -33,13 +33,13 @@ pack_main = {
     "model": MAIN_NETWORK,
     "optimizer": optimizer_main,
     "name": "main",
-    "queue": Queue(10),
+    "queue": Queue(tasks * 2),
 }
 pack_target = {
     "model": TARGET_NETWORK,
     "optimizer": optimizer_target,
     "name": "target",
-    "queue": Queue(10),
+    "queue": Queue(tasks * 2),
 }
 # ゲームごとに貯めて学習
 logger = logging.getLogger(__name__)
@@ -165,12 +165,9 @@ def play_game(thread_id: int):
                     canmov = [bd.canMoveTo(i) for i in range(4)]
                     copy_bd = bd.clone()
                     self_values, other_values = get_values(canmov, copy_bd, packs)
-                    # self_valuesとother_valuesのそれぞれを足し合わせる
-                    values = np.array(self_values) + np.array(other_values)
-                    sample_idx = np.argmax(values)
                     # 自分自身の評価値を取得
                     self_max_index = np.argmax(self_values)
-                    bd.play(sample_idx)
+                    bd.play(self_max_index)
                     if last_board is not None:
                         # with open("tmp_play.txt", "a", encoding="utf-8") as f:
                         #     f.write(

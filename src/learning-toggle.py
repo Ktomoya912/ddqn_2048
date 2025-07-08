@@ -23,7 +23,7 @@ if args.seed is not None:
     torch.manual_seed(args.seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
-tasks = os.cpu_count()
+tasks = os.cpu_count() - 2
 stop_event = threading.Event()  # スレッド終了用に使用
 bat_size = 1024  # バッチサイズ
 criterion = nn.MSELoss()  # 損失関数
@@ -33,13 +33,13 @@ pack_main = {
     "model": MAIN_NETWORK,
     "optimizer": optimizer_main,
     "name": "main",
-    "queue": Queue(100000),
+    "queue": Queue(10),
 }
 pack_target = {
     "model": TARGET_NETWORK,
     "optimizer": optimizer_target,
     "name": "target",
-    "queue": Queue(100000),
+    "queue": Queue(10),
 }
 # ゲームごとに貯めて学習
 logger = logging.getLogger(__name__)

@@ -1,5 +1,4 @@
 import logging
-import os
 import random
 import threading
 import time
@@ -9,7 +8,6 @@ from queue import Queue
 
 import numpy as np
 import torch
-from numpy import random as rnd
 from torch import nn, optim
 
 import config_2048 as cfg
@@ -24,9 +22,9 @@ if args.seed is not None:
     torch.manual_seed(args.seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
-tasks = os.cpu_count()
+tasks = 1  # os.cpu_count()
 stop_event = threading.Event()  # スレッド終了用に使用
-bat_size = 1024  # バッチサイズ
+bat_size = 10  # バッチサイズ
 criterion = nn.MSELoss()  # 損失関数
 optimizer_main = optim.Adam(MAIN_NETWORK.parameters(), lr=0.001)
 optimizer_target = optim.Adam(TARGET_NETWORK.parameters(), lr=0.001)
@@ -74,27 +72,27 @@ def mirror_board(board: np.ndarray):
 
 # 学習用の関数
 def train(records: list[dict], pack: dict, count: int = 1):
-    # inputsには盤面の情報、targetsには評価値が入る
-    target_values = []
+    other_values = []
     boards = []
     for record in records:
         board = record["board"]
-        target_value = record["target_value"]
+        other_value = record["other_value"]
         boards.append(board)
-        target_values.append(target_value)
+        other_values.append(other_value)
 
     # メインネットワークはターゲットから得られた評価値を使用して学習する
-    logger.info(f"train {count=}, {len(boards)=}, {len(target_values)=}")
+    logger.info(f"train {pack['name']} {count=}, {len(boards)=}, {len(other_values)=}")
     if len(boards) == 0:
         logger.warning("No records to train.")
         return
-    if len(boards) != len(target_values):
-        logger.error(f"Length mismatch: {len(boards)=}, {len(target_values)=}")
+    if len(boards) != len(other_values):
+        logger.error(f"Length mismatch: {len(boards)=}, {len(other_values)=}")
         return
-
     model = pack["model"]
-    optimizer = pack["optimizer"]
+    optimizer: optim.Adam = pack["optimizer"]
 
+    # with open(f"tmp_train_{pack['name']}.txt", "a", encoding="utf-8") as f:
+    #     f.write(f"{pack['name']}\n{boards=}\n{other_values=}\n\n")
     model.train()  # モデルを学習モードに設定
     optimizer.zero_grad()  # 勾配をゼロに初期化
     tmp = torch.zeros(len(boards), 99, device="cpu")
@@ -103,7 +101,7 @@ def train(records: list[dict], pack: dict, count: int = 1):
     inputs = tmp.to(cfg.DEVICE)
     # ネットワークにデータを入力し、順伝播を行う
     outputs = model.forward(inputs)
-    targets = torch.as_tensor(target_values, dtype=torch.float32)
+    targets = torch.as_tensor(other_values, dtype=torch.float32)
     targets = targets.reshape(-1, 1)  # ターゲットの形状を調整
     targets = targets.to(cfg.DEVICE)
     loss = criterion(outputs, targets)  # 損失を計算
@@ -112,9 +110,10 @@ def train(records: list[dict], pack: dict, count: int = 1):
     logger.debug(f"loss : {loss.item()}")
 
 
-def put_queue(board: np.ndarray, main_value: float, target_value: float, packs):
+def put_queue(board: np.ndarray, self_value: float, other_value: float, packs):
     board_cp = board.copy()
     queue = packs[0]["queue"]
+
     if args.symmetry:
         bd_list: list[np.ndarray] = [board]
         for _ in range(3):
@@ -126,68 +125,21 @@ def put_queue(board: np.ndarray, main_value: float, target_value: float, packs):
             board = rotate_board(board)
             bd_list.append(board)
 
-        if args.sym_type == 0:
-            logger.debug(f"{bd_list=}\n\t{board_cp=}")
-            for bd in bd_list:
-                queue.put(
-                    {
-                        "board": bd,
-                        "main_value": main_value,
-                        "target_value": target_value,
-                    }
-                )
-        elif args.sym_type == 1:
-            rnd.shuffle(bd_list)
-            rand_bd = bd_list.pop()
-            logger.debug(f"{bd_list=}\n\t{rand_bd=}")
+        logger.debug(f"{bd_list=}\n\t{board_cp=}")
+        for bd in bd_list:
             queue.put(
                 {
-                    "board": rand_bd,
-                    "main_value": main_value,
-                    "target_value": target_value,
-                }
-            )
-        elif args.sym_type == 2:
-            unique_bd = set(tuple(bd) for bd in bd_list)
-            logger.debug(f"{bd_list=}\n\t{unique_bd=}")
-            for bd in unique_bd:
-                queue.put(
-                    {
-                        "board": np.array(bd),
-                        "main_value": main_value,
-                        "target_value": target_value,
-                    }
-                )
-        elif args.sym_type == 3:
-            # 自分自身を選択する
-            board_index = 0
-            target = bd_list[board_index]
-            logger.debug(f"{bd_list=}\n\t{target=}")
-            queue.put(
-                {
-                    "board": target,
-                    "main_value": main_value,
-                    "target_value": target_value,
-                }
-            )
-        elif args.sym_type == 4:
-            # 0, 2を12時間回しましょう
-            board_index = 2
-            target = bd_list[board_index]
-            logger.debug(f"{bd_list=}\n\t{target=}")
-            queue.put(
-                {
-                    "board": target,
-                    "main_value": main_value,
-                    "target_value": target_value,
+                    "board": bd,
+                    "self_value": self_value,
+                    "other_value": other_value,
                 }
             )
     else:
         queue.put(
             {
                 "board": board,
-                "main_value": main_value,
-                "target_value": target_value,
+                "self_value": self_value,
+                "other_value": other_value,
             }
         )
 
@@ -211,15 +163,19 @@ def play_game(thread_id: int):
                     turn += 1
                     canmov = [bd.canMoveTo(i) for i in range(4)]
                     copy_bd = bd.clone()
-                    main_values, target_values = get_values(canmov, copy_bd, packs)
-                    # main_valuesから最大の評価値を持つインデックスを取得
-                    main_max_index = np.argmax(main_values)
-                    bd.play(main_max_index)
+                    self_values, other_values = get_values(canmov, copy_bd, packs)
+                    # 自分自身の評価値を取得
+                    self_max_index = np.argmax(self_values)
+                    bd.play(self_max_index)
                     if last_board is not None:
+                        # with open("tmp_play.txt", "a", encoding="utf-8") as f:
+                        #     f.write(
+                        #         f"{packs[0]['name']}\n{last_board=}\n{other_values[self_max_index]}\n\n"
+                        #     )
                         put_queue(
                             last_board.copy(),
-                            main_value=main_values[main_max_index],
-                            target_value=target_values[main_max_index],
+                            self_value=self_values[self_max_index],
+                            other_value=other_values[self_max_index],
                             packs=packs,
                         )
                     last_board = bd.clone().board
@@ -264,11 +220,14 @@ def batch_trainer(pack: dict):
     records = []
     while not stop_event.is_set():
         train_count += 1
-        while len(records) != bat_size:
+        while len(records) != bat_size and not stop_event.is_set():
             records.append(pack["queue"].get())
         train(records, pack, train_count)
 
         records.clear()
+    logger.info(
+        f"Batch training completed for {pack['name']} after {train_count} iterations."
+    )
     return train_count
 
 

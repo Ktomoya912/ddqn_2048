@@ -266,15 +266,13 @@ def batch_trainer(pack: dict):
     update_target_every = args.target_update_freq
     while not stop_event.is_set():
         train_count += 1
-        while len(records) != bat_size:
+        while len(records) != bat_size and not stop_event.is_set():
             records.append(pack["queue"].get())
         train(records, pack, train_count)
 
         if train_count % update_target_every == 0:
             TARGET_NETWORK.load_state_dict(MAIN_NETWORK.state_dict())
-            logger.info(
-                f"Update target network at train_count={train_count}, {pack['name']}"
-            )
+            logger.info(f"Update target network at {train_count=}, {pack['name']}")
 
         records.clear()
     return train_count
@@ -303,7 +301,6 @@ def main():
         executor.submit(play_game, i)
 
     executor.submit(batch_trainer, pack_main)
-    # executor.submit(batch_trainer, pack_target)
 
     start_time = datetime.now()
     while datetime.now() - start_time < cfg.TIME_LIMIT:

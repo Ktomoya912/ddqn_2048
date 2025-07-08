@@ -1,4 +1,5 @@
 import logging
+import os
 import random
 import threading
 import time
@@ -22,9 +23,9 @@ if args.seed is not None:
     torch.manual_seed(args.seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
-tasks = 1  # os.cpu_count()
+tasks = os.cpu_count()
 stop_event = threading.Event()  # スレッド終了用に使用
-bat_size = 10  # バッチサイズ
+bat_size = 1024  # バッチサイズ
 criterion = nn.MSELoss()  # 損失関数
 optimizer_main = optim.Adam(MAIN_NETWORK.parameters(), lr=0.001)
 optimizer_target = optim.Adam(TARGET_NETWORK.parameters(), lr=0.001)
@@ -145,7 +146,7 @@ def put_queue(board: np.ndarray, self_value: float, other_value: float, packs):
 
 
 def play_game(thread_id: int):
-    packs = [pack_main, pack_target]
+    packs = [pack_main, pack_target] if thread_id % 2 == 0 else [pack_target, pack_main]
     try:
         games = 0
         while not stop_event.is_set():
@@ -164,9 +165,12 @@ def play_game(thread_id: int):
                     canmov = [bd.canMoveTo(i) for i in range(4)]
                     copy_bd = bd.clone()
                     self_values, other_values = get_values(canmov, copy_bd, packs)
+                    # self_valuesとother_valuesのそれぞれを足し合わせる
+                    values = np.array(self_values) + np.array(other_values)
+                    sample_idx = np.argmax(values)
                     # 自分自身の評価値を取得
                     self_max_index = np.argmax(self_values)
-                    bd.play(self_max_index)
+                    bd.play(sample_idx)
                     if last_board is not None:
                         # with open("tmp_play.txt", "a", encoding="utf-8") as f:
                         #     f.write(

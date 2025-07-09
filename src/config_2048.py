@@ -22,7 +22,7 @@ except ImportError as e:
 
 
 def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
-    pat = r"(\[.*\]_)*(\w+_)*\d{8}T\d{6}_"
+    pat = r"(\w+_)*\d{8}T\d{6}_"
     config_stem = re.sub(pat, "", log_path.stem)
     target = [
         model_file
@@ -74,7 +74,7 @@ logging.basicConfig(
         logging.FileHandler(LOG_PATH, encoding="utf-8"),
     ],
 )
-logger = logging.getLogger("rich")
+logger = logging.getLogger("config_2048")
 for key, value in args._get_kwargs():
     logger.info(f"{key} : {value}")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

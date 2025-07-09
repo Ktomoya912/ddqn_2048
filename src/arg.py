@@ -26,6 +26,12 @@ game_conf_group.add_argument(
     choices=[0, 1, 2, 3, 4],
     help="0: 通常, 1: ランダムで取得, 2: 重複削除, 3: 自分自身(index0)を選択, 4: 対称性index2を選択",
 )
+game_conf_group.add_argument(
+    "--target_update_freq",
+    type=int,
+    help="ターゲットネットワークの更新頻度",
+    default=10,
+)
 parser.add_argument(
     "-l",
     "--log",
@@ -47,18 +53,7 @@ parser.add_argument(
     action="store_true",
     help="学習済みモデルをロードする",
 )
-parser.add_argument(
-    "--ddqn",
-    type=int,
-    help="0: ゲームごとに使用するモデルを切り替える, 1: ランダムにモデルを切り替える, 2: グローバルで切り替える",
-    default=0,
-)
-parser.add_argument(
-    "--target_update_freq",
-    type=int,
-    help="ターゲットネットワークの更新頻度",
-    default=10,
-)
+
 
 args = parser.parse_args()  # 4. 引数を解析
 for action in game_conf_group._group_actions:

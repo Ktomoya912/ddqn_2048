@@ -27,6 +27,13 @@ game_conf_group.add_argument(
     help="0: 通常, 1: ランダムで取得, 2: 重複削除, 3: 自分自身(index0)を選択, 4: 対称性index2を選択",
 )
 game_conf_group.add_argument(
+    "--ddqn_type",
+    type=str,
+    choices=["default", "toggle", "toggle-sum"],
+    default="default",
+    help="DDQNのタイプを選択",
+)
+game_conf_group.add_argument(
     "--target_update_freq",
     type=int,
     help="ターゲットネットワークの更新頻度",

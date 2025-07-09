@@ -14,7 +14,7 @@ from game_2048_3_3 import State
 stop_event = threading.Event()
 logger = logging.getLogger(__name__)
 games_played = 0
-GAMES_TO_PLAY = 10
+GAMES_TO_PLAY = 1000
 queue = Queue(GAMES_TO_PLAY)
 tasks = os.cpu_count()
 

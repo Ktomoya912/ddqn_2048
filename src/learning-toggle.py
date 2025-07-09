@@ -167,12 +167,14 @@ def play_game(thread_id: int):
                     self_values, other_values = get_values(canmov, copy_bd, packs)
                     # 自分自身の評価値を取得
                     self_max_index = np.argmax(self_values)
-                    bd.play(self_max_index)
+                    if args.ddqn_type == "toggle-sum":
+                        # self_valuesとother_valuesのそれぞれを足し合わせる
+                        values = np.array(self_values) + np.array(other_values)
+                        sample_idx = np.argmax(values)
+                        bd.play(sample_idx)
+                    else:
+                        bd.play(self_max_index)
                     if last_board is not None:
-                        # with open("tmp_play.txt", "a", encoding="utf-8") as f:
-                        #     f.write(
-                        #         f"{packs[0]['name']}\n{last_board=}\n{other_values[self_max_index]}\n\n"
-                        #     )
                         put_queue(
                             last_board.copy(),
                             self_value=self_values[self_max_index],
@@ -240,8 +242,8 @@ def clear_queues():
 
 
 def save_models():
-    main_model_path = cfg.MODEL_DIR / f"main_{cfg.LOG_PATH.stem}_toggle.pth"
-    target_model_path = cfg.MODEL_DIR / f"target_{cfg.LOG_PATH.stem}_toggle.pth"
+    main_model_path = cfg.MODEL_DIR / f"main_{cfg.LOG_PATH.stem}.pth"
+    target_model_path = cfg.MODEL_DIR / f"target_{cfg.LOG_PATH.stem}.pth"
 
     torch.save(MAIN_NETWORK.state_dict(), main_model_path)
     logger.info(f"save {main_model_path.name}")
@@ -250,7 +252,7 @@ def save_models():
 
 
 def main():
-    executor = ThreadPoolExecutor(max_workers=tasks + 2)
+    executor = ThreadPoolExecutor(max_workers=tasks)
     for i in range(tasks):
         executor.submit(play_game, i)
 

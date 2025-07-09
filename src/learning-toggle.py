@@ -146,6 +146,7 @@ def put_queue(board: np.ndarray, self_value: float, other_value: float, packs):
 
 
 def play_game(thread_id: int):
+    logger.info(f"Starting game thread {thread_id}...")
     packs = [pack_main, pack_target] if thread_id % 2 == 0 else [pack_target, pack_main]
     try:
         games = 0
@@ -219,6 +220,7 @@ def get_eval(board: np.ndarray, model: torch.nn.Module):
 
 
 def batch_trainer(pack: dict):
+    logger.info(f"Starting batch training for {pack['name']}...")
     train_count = 0
     records = []
     while not stop_event.is_set():
@@ -252,7 +254,7 @@ def save_models():
 
 
 def main():
-    executor = ThreadPoolExecutor(max_workers=tasks)
+    executor = ThreadPoolExecutor(max_workers=tasks + 2)
     for i in range(tasks):
         executor.submit(play_game, i)
 

@@ -29,7 +29,7 @@ game_conf_group.add_argument(
 game_conf_group.add_argument(
     "--ddqn_type",
     type=str,
-    choices=["default", "toggle", "toggle-sum"],
+    choices=["default", "toggle", "toggle_sum"],
     default="default",
     help="DDQNのタイプを選択",
 )

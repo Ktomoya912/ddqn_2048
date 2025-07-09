@@ -167,7 +167,7 @@ def play_game(thread_id: int):
                     self_values, other_values = get_values(canmov, copy_bd, packs)
                     # 自分自身の評価値を取得
                     self_max_index = np.argmax(self_values)
-                    if args.ddqn_type == "toggle-sum":
+                    if args.ddqn_type == "toggle_sum":
                         # self_valuesとother_valuesのそれぞれを足し合わせる
                         values = np.array(self_values) + np.array(other_values)
                         sample_idx = np.argmax(values)

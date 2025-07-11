@@ -4,7 +4,7 @@ import random
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timedelta
 from queue import Queue
 
 import numpy as np
@@ -243,14 +243,14 @@ def clear_queues():
     logger.info("Queues cleared, stopping threads...")
 
 
-def save_models():
+def save_models(save_count: int = 1):
     main_model_path = cfg.MODEL_DIR / f"main_{cfg.LOG_PATH.stem}.pth"
     target_model_path = cfg.MODEL_DIR / f"target_{cfg.LOG_PATH.stem}.pth"
 
     torch.save(MAIN_NETWORK.state_dict(), main_model_path)
-    logger.info(f"save {main_model_path.name}")
+    logger.info(f"save {main_model_path.name} {save_count=}")
     torch.save(TARGET_NETWORK.state_dict(), target_model_path)
-    logger.info(f"save {target_model_path.name}")
+    logger.info(f"save {target_model_path.name} {save_count=}")
 
 
 def main():
@@ -262,7 +262,16 @@ def main():
     executor.submit(batch_trainer, pack_target)
 
     start_time = datetime.now()
+    save_count = 0
+    last_save_time = start_time
+    save_interval = timedelta(hours=24)
     while datetime.now() - start_time < cfg.TIME_LIMIT:
+        # cfg.TIME_LIMITが24時間以上である場合かつ、24時間ごとに一旦モデルをセーブする
+        if cfg.TIME_LIMIT.total_seconds() >= save_interval.total_seconds():
+            if datetime.now() - last_save_time >= save_interval:
+                save_count += 1
+                save_models(save_count)
+                last_save_time = datetime.now()
         time.sleep(1)  # 少し待ってから終了処理を行う
 
     stop_event.set()

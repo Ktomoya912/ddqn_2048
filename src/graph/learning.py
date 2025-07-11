@@ -14,6 +14,7 @@ class LogFile:
     path: Path
     parsed: dict
     lines: list[dict] = None
+    hours: int = 12
 
     def __post_init__(self):
         self.lines = self.read_lines()
@@ -27,6 +28,8 @@ class LogFile:
         result_list = []
         start_time = None
         for line in text.split("\n"):
+            if grp := re.search(r"hours : (\d+)", line):
+                self.hours = int(grp.group(1))
             if "GAMEOVER" not in line:
                 continue
             parsed = parse_line(line)
@@ -55,8 +58,10 @@ interval = 300
 
 
 def parse_path(path: Path) -> LogFile:
-    if match := re.match(r"(\d{8}T\d{6})_\[(.*)\]$", path.stem, re.IGNORECASE):
-        dtm, kv_pairs = match.groups()
+    if match := re.match(
+        r"(?:\[(.*?)\]_)*(\d{8}T\d{6})_\[(.*)\]$", path.stem, re.IGNORECASE
+    ):
+        filename, dtm, kv_pairs = match.groups()
         time = datetime.strptime(dtm, "%Y%m%dT%H%M%S")
         kv_dict = dict(pair.split("-") for pair in kv_pairs.split("]["))
         return LogFile(
@@ -120,19 +125,24 @@ structured_logs = defaultdict(list)
 for log_file in log_files:
     structured_logs[log_file.label].append(log_file)
 
+x_limit = 0
 for i, (label, logs) in enumerate(structured_logs.items()):
     if len(logs) == 0:
         raise ValueError(f"Invalid log file: {label}")
     logs.sort(key=lambda x: x.time)
     if len(logs) >= 2:
         log_agg = []
-        for i, log in enumerate(logs):
+        tmp = 0
+        for j, log in enumerate(logs):
+            adjust = (
+                timedelta(hours=logs[max(0, j - 1)].hours).total_seconds() // interval
+            )
+            tmp += log.hours
             log_agg.extend(
                 aggregate_by_interval(
                     [
                         {
-                            "rel_time": line["rel_time"]
-                            + (timedelta(hours=12).seconds // interval) * i,
+                            "rel_time": line["rel_time"] + adjust * j,
                             "score": line["score"],
                             "init_eval": line["init_eval"],
                             "init_eval_2": line["init_eval_2"],
@@ -146,6 +156,8 @@ for i, (label, logs) in enumerate(structured_logs.items()):
     else:
         log = logs[0]
         log_agg = aggregate_by_interval(log.lines, interval)
+        tmp = log.hours
+    x_limit = max(x_limit, tmp)
     x = [entry["interval"] / 3600 for entry in log_agg]
     y_score = [entry["score"] for entry in log_agg]
     y_init_eval = [entry["init_eval"] for entry in log_agg]
@@ -164,19 +176,19 @@ for i, (label, logs) in enumerate(structured_logs.items()):
         color="C" + str(i),
         linestyle="--",
     )
-    plt.plot(
-        x,
-        y_init_eval_2,
-        label=label + "_init_eval_2",
-        color="C" + str(i),
-        linestyle=":",
-    )
+    # plt.plot(
+    #     x,
+    #     y_init_eval_2,
+    #     label=label + "_init_eval_2",
+    #     color="C" + str(i),
+    #     linestyle=":",
+    # )
     plt.xlabel("Time (hours)")
     plt.ylabel("Score")
     plt.title("Average Score over Time")
     plt.legend()
 plt.ylim(0, 6500)
-# plt.xlim(0, 24)
+plt.xlim(0, x_limit)
 plt.grid()
 save_dir = Path() / "dist"
 save_dir.mkdir(parents=True, exist_ok=True)

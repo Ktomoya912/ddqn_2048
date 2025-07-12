@@ -244,8 +244,8 @@ def clear_queues():
 
 
 def save_models(save_count: int = 1):
-    main_model_path = cfg.MODEL_DIR / f"main_{cfg.LOG_PATH.stem}.pth"
-    target_model_path = cfg.MODEL_DIR / f"target_{cfg.LOG_PATH.stem}.pth"
+    main_model_path = cfg.MODEL_DIR / f"main_{save_count}_{cfg.LOG_PATH.stem}.pth"
+    target_model_path = cfg.MODEL_DIR / f"target_{save_count}_{cfg.LOG_PATH.stem}.pth"
 
     torch.save(MAIN_NETWORK.state_dict(), main_model_path)
     logger.info(f"save {main_model_path.name} {save_count=}")
@@ -265,8 +265,7 @@ def main():
     save_count = 0
     last_save_time = start_time
     save_interval = timedelta(hours=24)
-    while datetime.now() - start_time < cfg.TIME_LIMIT:
-        # cfg.TIME_LIMITが24時間以上である場合かつ、24時間ごとに一旦モデルをセーブする
+    while datetime.now() - start_time < cfg.TIME_LIMIT and not stop_event.is_set():
         if cfg.TIME_LIMIT.total_seconds() >= save_interval.total_seconds():
             if datetime.now() - last_save_time >= save_interval:
                 save_count += 1

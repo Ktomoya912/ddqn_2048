@@ -21,7 +21,7 @@ def hash_board(state: State) -> int:
     これはMCTSの状態ノードのハッシュキーとして使用されます。
 
     Args:
-        board (np.ndarray): ゲームボードの状態（numpy配列）。
+        state (State): ゲームの状態を表すStateオブジェクト。
 
     Returns:
         int: ハッシュ値。
@@ -55,7 +55,7 @@ def calc_ev(board: np.ndarray):
 class Edge:
     """MCTSの辺（アクション）を表すクラス。"""
 
-    def __init__(self, tag, reward, child_node):
+    def __init__(self, tag: int, reward: float, child_node: "Node"):
         self.tag = tag  # アクション（例：0:上, 1:下, 2:左, 3:右、またはタイル配置位置）
         self.r = reward  # このアクションから得られる即時報酬（状態遷移のスコア差など）
         self.cnode = child_node  # 子ノード（次の状態）
@@ -76,15 +76,10 @@ class Node:
         self.children: list[Edge] = []  # このノードからの辺（Edgeオブジェクトのリスト）
         self.ev = ev  # 評価関数（NN）による評価値
 
-    def get_q_value(self):
-        return self.q_value
-
     def __str__(self):
-        children_str = "".join(str(e) for e in self.children)
         return (
             f"node p={hex(id(self))} vc={self.visit_count} Qv={self.q_value:.3f} "
             f"ef={int(self.expand_flg)} cs={len(self.children)} ev={self.ev:.3f} "
-            f"children: {children_str}"
         )
 
 
@@ -107,8 +102,6 @@ class MCTSSearcher:
         self.boltzmann = boltzmann  # ボルツマン選択を使用するか
         self.expectimax = expectimax  # Expectimaxバックアップを使用するか
 
-        # Stateオブジェクトはデフォルトでハッシュ可能ではないため、
-        # ボードとスコアのタプルをハッシュキーとして使用します。
         # 状態ノードを格納するマップ (hashable_state -> Node)
         self.state_node_map: dict[int, Node] = {}
         # アフターステートノードを格納するマップ (hashable_state -> Node)
@@ -116,7 +109,7 @@ class MCTSSearcher:
 
         self.number_ev_calc = 0  # 評価関数呼び出し回数カウンタ
 
-    def find_or_create_node_state(self, state: State, nodemap: dict):
+    def find_or_create_node_state(self, state: State, nodemap: dict[int, Node]):
         """
         ステートに対応するノードを見つけるか、新しく作成する。
         """
@@ -127,7 +120,9 @@ class MCTSSearcher:
             nodemap[hvalue] = node
         return nodemap[hvalue]
 
-    def find_or_create_node_afterstate(self, afterstate: State, nodemap: dict):
+    def find_or_create_node_afterstate(
+        self, afterstate: State, nodemap: dict[int, Node]
+    ):
         """
         アフターステートに対応するノードを見つけるか、新しく作成する。
         アフターステートノードはNNによる評価値を持つ。
@@ -217,7 +212,7 @@ class MCTSSearcher:
             vals = []
             for e in node.children:
                 # Q_valueが未訪問ノードの時には使えない可能性があるため、evも考慮する
-                vals.append(math.exp((e.cnode.get_q_value() + e.cnode.ev) / t))
+                vals.append(math.exp((e.cnode.q_value + e.cnode.ev) / t))
             logger.debug(
                 f"do_state_select: Boltzmann vals = {[f'{d:.3f}' for d in vals]}"
             )
@@ -257,7 +252,7 @@ class MCTSSearcher:
             if lc == -1:  # C++コードの-1は特殊な意味を持つ
                 lc = -sys.float_info.max  # DBL_MAX に相当
                 for e in node.children:
-                    lc = max(lc, e.cnode.get_q_value())
+                    lc = max(lc, e.cnode.q_value)
             lc = max(lc, 1.0)  # lcは少なくとも1
 
             max_ucb = -sys.float_info.max  # DBL_MAX に相当
@@ -268,7 +263,7 @@ class MCTSSearcher:
                 if e.count == 0:
                     continue
 
-                ucb = e.cnode.get_q_value() + lc * math.sqrt(
+                ucb = e.cnode.q_value + lc * math.sqrt(
                     2.0 * math.log(total_visit_count) / e.count
                 )
                 ucb_values.append(f"{ucb:.3f}")
@@ -379,7 +374,7 @@ class MCTSSearcher:
             for e in node.children:
                 if e.count == 0:
                     continue
-                v = e.cnode.get_q_value() + e.r
+                v = e.cnode.q_value + e.r
                 max_q = max(max_q, v)
                 found_valid_child = True
 
@@ -425,7 +420,7 @@ class MCTSSearcher:
                 # C++の元のコードでは(i % 2 == 0) ? 9 : 1 という重み付けがある
                 # これはタイルが2(値1)と4(値2)の確率9:1に対応している可能性
                 weight = 9 if (i % 2 == 0) else 1
-                total_sum += e.cnode.get_q_value() * weight
+                total_sum += e.cnode.q_value * weight
                 total_count += weight
                 found_valid_child = True
 
@@ -557,7 +552,7 @@ class MCTSSearcher:
 
         # 各子ノードの評価値を取得し、evalsに格納
         for e in root.children:
-            v = e.cnode.get_q_value() + e.r
+            v = e.cnode.q_value + e.r
             if 0 <= e.tag < 4:  # アクションが方向（0-3）の場合
                 evals[e.tag] = v
 

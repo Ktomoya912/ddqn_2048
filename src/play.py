@@ -7,6 +7,7 @@ from queue import Queue
 
 import numpy as np
 
+from arg import args
 from common import calc_progress, get_values
 from config_2048 import MAIN_NETWORK, TARGET_NETWORK, get_model_name
 from game_2048_3_3 import State
@@ -44,13 +45,18 @@ def play_game(thread_id: int):
             copy_bd = bd.clone()
             main_values, target_values = get_values(canmov, copy_bd, packs)
             progress = calc_progress(bd.board.copy())
-            # main_valuesから最大の評価値を持つインデックスを取得
-            main_max_index = np.argmax(main_values)
 
             states.append((bd.board.copy(), progress))
             evals.append((main_values, progress))
 
-            bd.play(main_max_index)
+            self_max_index = np.argmax(main_values)
+            if args.ddqn_type == "toggle_sum":
+                # self_valuesとother_valuesのそれぞれを足し合わせる
+                values = np.array(main_values) + np.array(target_values)
+                sample_idx = np.argmax(values)
+                bd.play(sample_idx)
+            else:
+                bd.play(self_max_index)
             after_states.append((bd.board.copy(), calc_progress(bd.board.copy())))
             bd.putNewTile()
 

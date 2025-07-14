@@ -29,25 +29,28 @@ class LogFile:
         start_time = None
         for line in text.split("\n"):
             if grp := re.search(r"hours : (\d+)", line):
-                self.hours = int(grp.group(1))
+                self.hours = max(int(grp.group(1)), 1)
             if "GAMEOVER" not in line:
                 continue
             parsed = parse_line(line)
             if parsed:
                 if start_time is None:
                     start_time = parsed["time"]
-                rel_time = (parsed["time"] - start_time).seconds // interval
+                rel_time = (parsed["time"] - start_time).total_seconds() // interval
                 result_list.append(
                     {
                         "rel_time": rel_time,
                         "time": parsed["time"],
                         "score": parsed["score"],
                         "init_eval": parsed["init_eval"],
-                        "init_eval_2": parsed["init_eval_2"],
+                        "init_eval_2": parsed.get("init_eval_2", 0),
                     }
                 )
         if not result_list:
             raise ValueError(f"Invalid log file: {self.path.name}")
+        print(
+            f"Loaded {len(result_list)} lines from {self.path.name}\nTotal seconds: {(result_list[-1]['time'] - start_time).total_seconds()}"
+        )
         return result_list
 
 
@@ -87,6 +90,20 @@ def parse_line(line: str):
             "queue_size": int(match.group(6)),
             "init_eval": float(match.group(7)),
             "init_eval_2": float(match.group(8)),
+        }
+    match2 = re.match(
+        r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}):INFO:GAMEOVER:\s+thread_id=(\d+)\s+count=(\d+)\s+bd\.score=(\d+)\s+turn=(\d+).*queue_size=(\d+)\s+init_eval=([\d.]+)",
+        line,
+    )
+    if match2:
+        return {
+            "time": datetime.strptime(match2.group(1), "%Y-%m-%dT%H:%M:%S"),
+            "thread_id": int(match2.group(2)),
+            "count": int(match2.group(3)),
+            "score": int(match2.group(4)),
+            "turn": int(match2.group(5)),
+            "queue_size": int(match2.group(6)),
+            "init_eval": float(match2.group(7)),
         }
     return None
 

@@ -41,11 +41,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 # 受信したJSON文字列をPythonのリストにデコード
                 decoded_data = data.decode("utf-8")
                 board = json.loads(decoded_data)
-                logger.info(f"Received board from C++: {board}")
 
                 # 盤面を評価
                 evaluation = get_eval(np.array(board, dtype="int64"), MAIN_NETWORK)
-                logger.info(f"Evaluated value: {evaluation}")
+                logger.debug(f"{board=} {evaluation=}")
 
                 # 評価値をJSON形式でC++に返信
                 response_message = json.dumps({"evaluation": evaluation})

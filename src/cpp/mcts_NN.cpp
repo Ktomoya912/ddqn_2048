@@ -50,10 +50,10 @@ int progress_calculation(int board[9])
 
 int main(int argc, char **argv)
 {
-  if (argc < 10 + 1)
+  if (argc < 9 + 1)
   {
     fprintf(stderr,
-            "Usage: playgreedy <seed> <game_counts> <EV-file> "
+            "Usage: playgreedy <seed> <game_counts> "
             "<simulations> <randamTrun> <expand_count> <debug> <c> <Boltzmann> "
             "<expectimax>\n");
     exit(1);
@@ -145,11 +145,15 @@ int main(int argc, char **argv)
         GameOver_list.push_back(GameOver(turn, gid + 1,
                                          progress_calculation(nextstate.board),
                                          nextstate.score));
+        cout << "GameOver at turn " << turn << " in game " << gid + 1
+             << " with score: " << nextstate.score << endl;
         break;
       }
       state = nextstate;
     }
   }
+
+  save_ev_map("./ev_map.db");
 
   // 出力処理
   ofstream stateFile(baseDir + "/state.txt");

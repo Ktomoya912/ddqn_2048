@@ -29,6 +29,42 @@ using json = nlohmann::json;
 static int nn_socket = -1;
 static struct sockaddr_in nn_server_addr;
 static bool nn_initialized = false;
+// double ev_map
+map <size_t, double> ev_map; // 盤面の評価値をキャッシュするためのマップ
+
+
+void save_ev_map(const string &filename)
+{
+  ofstream ofs(filename);
+  if (!ofs)
+  {
+    // warning: ファイルが開けなかった場合のエラーメッセージ
+    cerr << "Warning: Could not open file for saving ev_map: " << filename << endl;
+    return;
+  }
+  for (const auto &pair : ev_map)
+  {
+    ofs << pair.first << " " << pair.second << "\n";
+  }
+  ofs.close();
+}
+
+void load_ev_map(const string &filename)
+{
+  ifstream ifs(filename);
+  if (!ifs)
+  {
+    cerr << "Error opening file for loading ev_map: " << filename << endl;
+    return;
+  }
+  size_t hvalue;
+  double ev;
+  while (ifs >> hvalue >> ev)
+  {
+    ev_map[hvalue] = ev; // ハッシュ値と評価値をマップに追加
+  }
+  ifs.close();
+}
 
 static void init_nn_socket()
 {
@@ -104,12 +140,33 @@ static void cleanup_nn_socket()
   }
 }
 
+/**
+ * 盤面のハッシュ関数を定義
+ */
+static size_t hashBoard(const int board[9])
+{
+  size_t hashValue = 100;
+  const int base = 12;
+  for (int i = 0; i < 9; i++)
+  {
+    hashValue = hashValue * base + board[i];
+  }
+  return hashValue;
+}
+
 inline double calcEv(const int *board)
 {
   // ソケットが初期化されていなければ初期化する
   if (!nn_initialized)
   {
     init_nn_socket();
+    load_ev_map("./ev_map.db"); 
+  }
+  // 盤面のハッシュ値を計算
+  size_t hvalue = hashBoard(board);
+  // キャッシュに評価値があればそれを返す
+  if (ev_map.find(hvalue) != ev_map.end()) {
+    return ev_map[hvalue];
   }
 
   // 盤面をJSON配列に変換
@@ -144,6 +201,9 @@ inline double calcEv(const int *board)
       if (response_json.contains("evaluation"))
       {
         double evaluation_value = response_json["evaluation"].get<double>();
+        // キャッシュに評価値を保存
+        ev_map[hvalue] = evaluation_value;
+        
         return evaluation_value;
       }
       else if (response_json.contains("error"))
@@ -171,20 +231,6 @@ inline double calcEv(const int *board)
     return 0.0; // エラー値を返す
   }
   return 0.0; // フォールバック
-}
-
-/**
- * 盤面のハッシュ関数を定義
- */
-static size_t hashBoard(const int board[9])
-{
-  size_t hashValue = 100;
-  const int base = 12;
-  for (int i = 0; i < 9; i++)
-  {
-    hashValue = hashValue * base + board[i];
-  }
-  return hashValue;
 }
 
 class node_t;

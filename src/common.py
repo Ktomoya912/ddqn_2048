@@ -53,3 +53,33 @@ def get_values(canmov: list[bool], bd: State, packs: list):
             target_value[i] = float(target_result.data[i]) + sub_list[i]
 
     return main_value, target_value
+
+
+def get_one_values(canmov: list[bool], bd: State, model: torch.nn.Module):
+    """移動可能な方向の評価値を計算する。
+    移動可能な方向に対して、評価値を計算し、最大の評価値とその方向を返す。
+
+    Args:
+        canmov (list[bool]): 移動可能な方向のリスト
+        bd (State): ゲームの状態を表すStateオブジェクト
+        model (torch.nn.Module): 評価を行うニューラルネットワークモデル
+
+    Returns:
+        list: 各方向の評価値のリスト
+    """
+    model.eval()
+    inputs = torch.zeros(4, 99, device="cpu")
+    sub_list = []
+    for i in range(4):
+        copy_bd = bd.clone()
+        copy_bd.play(i)
+        sub_list.append(copy_bd.score - bd.score)
+        write_make_input(copy_bd.board, inputs[i, :])
+    inputs = inputs.to(DEVICE)
+    result: torch.Tensor = model.forward(inputs)
+    values = [-1e10] * 4
+    for i in range(4):
+        if canmov[i]:
+            values[i] = float(result.data[i]) + sub_list[i]
+
+    return values

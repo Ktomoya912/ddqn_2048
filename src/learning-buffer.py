@@ -216,6 +216,7 @@ def batch_trainer(pack: dict):
     records = []
     # 重み更新の頻度
     update_target_every = args.target_update_freq
+    weights_before_2 = None
     while not stop_event.is_set():
         train_count += 1
         while len(records) != bat_size and not stop_event.is_set():
@@ -223,7 +224,10 @@ def batch_trainer(pack: dict):
         train(records, pack, train_count)
 
         if train_count % update_target_every == 0:
-            TARGET_NETWORK.load_state_dict(MAIN_NETWORK.state_dict())
+            weights = MAIN_NETWORK.state_dict()
+            if weights_before_2 is not None:
+                TARGET_NETWORK.load_state_dict(weights_before_2)
+            weights_before_2 = weights
             logger.info(f"Update target network at {train_count=}, {pack['name']}")
 
         records.clear()

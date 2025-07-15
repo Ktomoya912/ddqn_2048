@@ -15,15 +15,10 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-#ifdef NT4
-#include "4tuples_sym.h"
-string NT = "NT4";
-#include "mcts_v2.hpp"
-#else
-#include "4tuples_sym.h"
-string NT = "NT6";
-#include "mcts_v2.hpp"
-#endif
+#include "mcts_v2_with_NN.hpp"
+
+// mcts_v2.hppで定義されたソケットクリーンアップ関数を呼び出すための前方宣言
+extern void cleanup_nn_socket();
 
 class GameOver
 {
@@ -66,18 +61,18 @@ int main(int argc, char **argv)
 
   int seed = atoi(argv[1]);
   int game_count = atoi(argv[2]);
-  char *evfile = argv[3];
-  int simulations = atoi(argv[4]);
-  int randomTurn = atoi(argv[5]);
-  int expand_count = atoi(argv[6]);
-  bool debug = atoi(argv[7]);
-  int c = atoi(argv[8]);
-  bool Boltzmann = atoi(argv[9]);
-  bool expectimax = atoi(argv[10]);
+  // char *evfile = argv[3];
+  int simulations = atoi(argv[3]);
+  int randomTurn = atoi(argv[4]);
+  int expand_count = atoi(argv[5]);
+  bool debug = atoi(argv[6]);
+  int c = atoi(argv[7]);
+  bool Boltzmann = atoi(argv[8]);
+  bool expectimax = atoi(argv[9]);
 
   string baseDir =
-      "../board_data/MCTS" + std::string(1, evfile[0]) + "/" + "game_count" +
-      std::to_string(game_count) + "_evfile" + std::string(evfile) +
+      "../board_data/MCTS/game_count" +
+      std::to_string(game_count) +
       "_simulations" + std::to_string(simulations) + "_randomTurn" +
       std::to_string(randomTurn) + "_expandcount" +
       std::to_string(expand_count) + "_c" + std::to_string(c) + "_Boltzmann" +
@@ -103,14 +98,6 @@ int main(int argc, char **argv)
   }
 
   srand(seed);
-  FILE *fp = fopen(evfile, "rb");
-  if (fp == NULL)
-  {
-    fprintf(stderr, "cannot open file: %s\n", evfile);
-    exit(1);
-  }
-  readEvs(fp);
-  fclose(fp);
 
   mcts_searcher_t mcts_searcher(simulations, randomTurn, expand_count, c,
                                 Boltzmann, expectimax, debug);
@@ -220,6 +207,8 @@ int main(int argc, char **argv)
   stateFile.close();
   afterStateFile.close();
   evalFile.close();
+
+  cleanup_nn_socket();
 
   return 0;
 }

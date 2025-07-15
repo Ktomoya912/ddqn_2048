@@ -1,12 +1,177 @@
 #pragma once
 #include <unordered_map>
+#include <string>   // std::string を使用するため
+#include <vector>   // std::vector を使用するため
+#include <iostream> // デバッグ出力用
+#include "json.hpp"
+
+// OSごとのソケット関連ヘッダ
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "Ws2_32.lib")
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#endif
+
 using namespace std;
 
 #include "Game2048_3_3.h"
+using json = nlohmann::json;
 // #define DEBUGOUT(x) {x}
 #define DEBUGOUT(x) \
   {                 \
   }
+
+static int nn_socket = -1;
+static struct sockaddr_in nn_server_addr;
+static bool nn_initialized = false;
+
+static void init_nn_socket()
+{
+  if (nn_initialized)
+  {
+    return;
+  }
+
+#ifdef _WIN32
+  WSADATA wsaData;
+  int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (iResult != 0)
+  {
+    cerr << "WSAStartup failed: " << iResult << endl;
+    exit(1); // 初期化失敗で終了
+  }
+#endif
+
+  nn_socket = socket(AF_INET, SOCK_STREAM, 0);
+  if (nn_socket == -1)
+  {
+    cerr << "Failed to create NN socket." << endl;
+#ifdef _WIN32
+    WSACleanup();
+#endif
+    exit(1);
+  }
+
+  nn_server_addr.sin_family = AF_INET;
+  nn_server_addr.sin_port = htons(65432); // Pythonサーバーのポート
+
+  if (inet_pton(AF_INET, "127.0.0.1", &nn_server_addr.sin_addr) <= 0)
+  {
+    cerr << "Invalid NN server address/ Address not supported." << endl;
+#ifdef _WIN32
+    closesocket(nn_socket);
+    WSACleanup();
+#else
+    close(nn_socket);
+#endif
+    exit(1);
+  }
+
+  if (connect(nn_socket, (struct sockaddr *)&nn_server_addr, sizeof(nn_server_addr)) == -1)
+  {
+    cerr << "Failed to connect to NN server. Please ensure the Python server is running." << endl;
+#ifdef _WIN32
+    closesocket(nn_socket);
+    WSACleanup();
+#else
+    close(nn_socket);
+#endif
+    exit(1);
+  }
+  cout << "Successfully connected to Python NN server." << endl;
+  nn_initialized = true;
+}
+
+// Socketのクリーンアップ関数
+static void cleanup_nn_socket()
+{
+  if (nn_initialized && nn_socket != -1)
+  {
+#ifdef _WIN32
+    closesocket(nn_socket);
+    WSACleanup();
+#else
+    close(nn_socket);
+#endif
+    nn_socket = -1;
+    nn_initialized = false;
+    cout << "Disconnected from Python NN server." << endl;
+  }
+}
+
+inline double calcEv(const int *board)
+{
+  // ソケットが初期化されていなければ初期化する
+  if (!nn_initialized)
+  {
+    init_nn_socket();
+  }
+
+  // 盤面をJSON配列に変換
+  json json_board = json::array();
+  for (int i = 0; i < 9; i++)
+  {
+    json_board.push_back(board[i]);
+  }
+  std::string message = json_board.dump();
+
+  // データを送信
+  if (send(nn_socket, message.c_str(), message.length(), 0) == -1)
+  {
+    cerr << "Failed to send board data to NN server." << endl;
+    // エラーハンドリング：再接続を試みるか、エラー値を返すか
+    return 0.0; // 例として0.0を返す
+  }
+  // DEBUGOUT(cout << "Sent board to Python NN: " << message << endl;);
+
+  // サーバーからの応答を受信
+  char buffer[4096] = {0};
+  int bytes_received = recv(nn_socket, buffer, sizeof(buffer) - 1, 0);
+  if (bytes_received > 0)
+  {
+    buffer[bytes_received] = '\0';
+    std::string received_json_str(buffer);
+    // DEBUGOUT(cout << "Received from Python NN: " << received_json_str << endl;);
+
+    try
+    {
+      json response_json = json::parse(received_json_str);
+      if (response_json.contains("evaluation"))
+      {
+        double evaluation_value = response_json["evaluation"].get<double>();
+        return evaluation_value;
+      }
+      else if (response_json.contains("error"))
+      {
+        cerr << "Python NN server error: " << response_json["error"].get<string>() << endl;
+        return 0.0; // エラー値を返す
+      }
+    }
+    catch (const json::parse_error &e)
+    {
+      cerr << "JSON parse error from NN server: " << e.what() << endl;
+      return 0.0; // エラー値を返す
+    }
+  }
+  else if (bytes_received == 0)
+  {
+    cerr << "NN server closed connection unexpectedly." << endl;
+    // 接続が切れた場合の処理：再接続を試みるか
+    nn_initialized = false; // 再接続のためにフラグをリセット
+    return 0.0;             // エラー値を返す
+  }
+  else
+  {
+    cerr << "Failed to receive data from NN server." << endl;
+    return 0.0; // エラー値を返す
+  }
+  return 0.0; // フォールバック
+}
 
 /**
  * 盤面のハッシュ関数を定義

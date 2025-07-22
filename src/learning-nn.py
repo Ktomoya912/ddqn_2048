@@ -12,7 +12,7 @@ from torch import nn, optim
 
 import config_2048 as cfg
 from arg import args
-from common import get_one_values, write_make_input
+from common import get_one_values, save_models, write_make_input
 from config_2048 import MAIN_NETWORK
 from game_2048_3_3 import State
 
@@ -189,12 +189,6 @@ def clear_queues():
     while queue.qsize() > 0:
         queue.get()
     logger.info("Queues cleared, stopping threads...")
-
-
-def save_models(save_count: int = 1):
-    main_model_path = cfg.MODEL_DIR / f"{save_count}_{cfg.LOG_PATH.stem}.pth"
-    torch.save(MAIN_NETWORK.state_dict(), main_model_path)
-    logger.info(f"save {main_model_path.name} {save_count=}")
 
 
 def main():

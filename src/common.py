@@ -3,10 +3,20 @@ import logging
 import numpy as np
 import torch
 
-from config_2048 import DEVICE
+from config_2048 import DEVICE, LOG_PATH, MAIN_NETWORK, MODEL_DIR, TARGET_NETWORK
 from game_2048_3_3 import State
 
 logger = logging.getLogger(__name__)
+
+
+def save_models(save_count: int = -1):
+    main_model_path = MODEL_DIR / f"main_{save_count}_{LOG_PATH.stem}.pth"
+    target_model_path = MODEL_DIR / f"target_{save_count}_{LOG_PATH.stem}.pth"
+
+    torch.save(MAIN_NETWORK.state_dict(), main_model_path)
+    logger.info(f"save {main_model_path.name} {save_count=}")
+    torch.save(TARGET_NETWORK.state_dict(), target_model_path)
+    logger.info(f"save {target_model_path.name} {save_count=}")
 
 
 def calc_progress(board: np.ndarray):

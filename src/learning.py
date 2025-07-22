@@ -13,7 +13,7 @@ from torch import nn, optim
 
 import config_2048 as cfg
 from arg import args
-from common import get_values, write_make_input
+from common import get_values, save_models, write_make_input
 from config_2048 import MAIN_NETWORK, TARGET_NETWORK
 from game_2048_3_3 import State
 
@@ -189,7 +189,7 @@ def play_game(thread_id: int):
                             packs=packs,
                         )
                         logger.info(
-                            f'GAMEOVER: {thread_id=:02d} {count=:03d} {bd.score=:04d} {turn=:04d} {packs[0]["name"].ljust(7)}queue_size={packs[0]["queue"].qsize():04d} {init_eval_1=:.2f} {init_eval_2=:.2f}'
+                            f"GAMEOVER: {thread_id=:02d} {count=:03d} {bd.score=:04d} {turn=:04d} {packs[0]['name'].ljust(7)}queue_size={packs[0]['queue'].qsize():04d} {init_eval_1=:.2f} {init_eval_2=:.2f}"
                         )
                         break
                 if args.restart and len(states) > 10:
@@ -235,16 +235,6 @@ def clear_queues():
         pack_main["queue"].get()
         pack_target["queue"].get()
     logger.info("Queues cleared, stopping threads...")
-
-
-def save_models(save_count: int = 1):
-    main_model_path = cfg.MODEL_DIR / f"main_{save_count}_{cfg.LOG_PATH.stem}.pth"
-    target_model_path = cfg.MODEL_DIR / f"target_{save_count}_{cfg.LOG_PATH.stem}.pth"
-
-    torch.save(MAIN_NETWORK.state_dict(), main_model_path)
-    logger.info(f"save {main_model_path.name} {save_count=}")
-    torch.save(TARGET_NETWORK.state_dict(), target_model_path)
-    logger.info(f"save {target_model_path.name} {save_count=}")
 
 
 def main():

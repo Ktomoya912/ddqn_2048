@@ -19,17 +19,17 @@ game_conf_group.add_argument(
     action="store_true",
     help="対称性を考慮する",
 )
-game_conf_group.add_argument(
-    "--sym_type",
-    type=int,
-    default=0,
-    choices=[0, 1, 2, 3, 4],
-    help="0: 通常, 1: ランダムで取得, 2: 重複削除, 3: 自分自身(index0)を選択, 4: 対称性index2を選択",
-)
+# game_conf_group.add_argument(
+#     "--sym_type",
+#     type=int,
+#     default=0,
+#     choices=[0, 1, 2, 3, 4],
+#     help="0: 通常, 1: ランダムで取得, 2: 重複削除, 3: 自分自身(index0)を選択, 4: 対称性index2を選択",
+# )
 game_conf_group.add_argument(
     "--ddqn_type",
     type=str,
-    choices=["default", "toggle", "toggle_sum"],
+    choices=["default", "toggle", "toggle_sum", "off"],
     default="default",
     help="DDQNのタイプを選択",
 )
@@ -59,6 +59,11 @@ parser.add_argument(
     "--load_model",
     action="store_true",
     help="学習済みモデルをロードする",
+)
+parser.add_argument(
+    "--train_after_play",
+    action="store_true",
+    help="学習後にプレイを行う",
 )
 
 

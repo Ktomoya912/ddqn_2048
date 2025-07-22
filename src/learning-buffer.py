@@ -283,3 +283,8 @@ if __name__ == "__main__":
         if "executor" in locals():
             executor.shutdown(wait=True)
         logger.info("Program terminated gracefully.")
+        if args.train_after_play:
+            logger.info("Starting play after training...")
+            from play import main as play_main
+
+            play_main()

@@ -22,7 +22,7 @@ except ImportError as e:
 
 
 def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
-    pat = r"(\[.*\]_)*(\w+_)*\d{8}T\d{6}_"
+    pat = r"([\-\d*]_)?(\[.*\]_)*(\w+_)*\d{8}T\d{6}_"
     config_stem = re.sub(pat, "", log_path.stem)
     target = [
         model_file
@@ -49,6 +49,8 @@ def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
 def get_model_name():
     # game_confからモデル名を取得
     models_names = []
+    if script_name not in ["learning.py", "play.py"]:
+        models_names.append(f"[script-{script_name}]")
     for k, v in game_conf.items():
         models_names.append(f"[{k}-{v}]")
     return "".join(models_names)

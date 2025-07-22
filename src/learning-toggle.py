@@ -283,3 +283,8 @@ if __name__ == "__main__":
         stop_event.set()
         clear_queues()
         save_models()
+        if args.train_after_play:
+            logger.info("Starting play after training...")
+            from play import main as play_main
+
+            play_main()

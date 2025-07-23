@@ -29,7 +29,7 @@ game_conf_group.add_argument(
 game_conf_group.add_argument(
     "--ddqn_type",
     type=str,
-    choices=["default", "toggle", "toggle_sum", "off"],
+    choices=["default", "toggle", "toggle_sum"],
     default="default",
     help="DDQNのタイプを選択",
 )
@@ -65,7 +65,11 @@ parser.add_argument(
     action="store_true",
     help="学習後にプレイを行う",
 )
-
+parser.add_argument(
+    "--load_script",
+    type=str,
+    help="ロードするスクリプト名",
+)
 
 args = parser.parse_args()  # 4. 引数を解析
 for action in game_conf_group._group_actions:

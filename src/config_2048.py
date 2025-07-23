@@ -34,6 +34,10 @@ def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
         logger.warning(f"Model file not found: {config_stem}")
         return
     target.sort()
+    if args.load_script:
+        target = [
+            model_file for model_file in target if args.load_script in model_file.name
+        ]
     state_dict = torch.load(target[-1], map_location=device, weights_only=True)
     logger.info(f"Model loaded: {target[-1]}")
     new_state_dict = OrderedDict()
@@ -49,7 +53,7 @@ def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
 def get_model_name():
     # game_confからモデル名を取得
     models_names = []
-    if script_name not in ["learning.py", "play.py"]:
+    if script_name not in ["learning.py", "play.py", "server.py"]:
         models_names.append(f"[script-{script_name}]")
     for k, v in game_conf.items():
         models_names.append(f"[{k}-{v}]")

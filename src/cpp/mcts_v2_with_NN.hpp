@@ -53,7 +53,7 @@ void load_ev_map(const string &filename)
   ifstream ifs(filename);
   if (!ifs)
   {
-    cerr << "Error opening file for loading ev_map: " << filename << endl;
+    cerr << "Warning: opening file for loading ev_map: " << filename << endl;
     return;
   }
   size_t hvalue;

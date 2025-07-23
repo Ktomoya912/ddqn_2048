@@ -70,7 +70,7 @@ int main(int argc, char **argv)
   bool Boltzmann = atoi(argv[8]);
   bool expectimax = atoi(argv[9]);
 
-  string baseDir = "../board_data/MCTS/tmp";
+  string baseDir = "../../board_data/MCTS/tmp";
 
   // ディレクトリ作成
   try

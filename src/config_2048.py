@@ -22,7 +22,7 @@ except ImportError as e:
 
 
 def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
-    pat = r"([\-\d*]_)?(\[.*\]_)*(\w+_)*\d{8}T\d{6}_"
+    pat = r"(\w+_)*(\-?\d*_)?(\[.*\]_)*\d{8}T\d{6}_"
     config_stem = re.sub(pat, "", log_path.stem)
     target = [
         model_file
@@ -38,6 +38,9 @@ def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
         target = [
             model_file for model_file in target if args.load_script in model_file.name
         ]
+        if not target:
+            logger.warning(f"Model file with script {args.load_script} not found: {config_stem}")
+            return
     state_dict = torch.load(target[-1], map_location=device, weights_only=True)
     logger.info(f"Model loaded: {target[-1]}")
     new_state_dict = OrderedDict()
@@ -53,8 +56,6 @@ def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
 def get_model_name():
     # game_confからモデル名を取得
     models_names = []
-    if script_name not in ["learning.py", "play.py", "server.py"]:
-        models_names.append(f"[script-{script_name}]")
     for k, v in game_conf.items():
         models_names.append(f"[{k}-{v}]")
     return "".join(models_names)

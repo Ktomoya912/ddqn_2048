@@ -23,7 +23,6 @@ except ImportError as e:
 
 
 def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
-    global loaded_model
     pat = r"(\w+_)*(\-?\d*_)?(\[.*\]_)*\d{8}T\d{6}_"
     config_stem = re.sub(pat, "", log_path.stem)
     target = [
@@ -46,7 +45,6 @@ def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
             )
             return
     state_dict = torch.load(target[-1], map_location=device, weights_only=True)
-    loaded_model = target[-1].stem.replace(f"{type_}_", "")
     logger.info(f"Model loaded: {target[-1]}")
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():
@@ -55,7 +53,7 @@ def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
         else:
             new_state_dict[k] = v
 
-    return new_state_dict
+    return new_state_dict, target[-1].stem.replace(f"{type_}_", "")
 
 
 def get_model_name():
@@ -94,7 +92,9 @@ logger.info(f"Using device: {DEVICE}")
 MAIN_NETWORK: torch.nn.Module = modeler.Model().to(DEVICE)  # noqa: F821
 TARGET_NETWORK: torch.nn.Module = modeler2.Model().to(DEVICE)  # noqa: F821
 if args.load_model:
-    if main_dict := get_trained_model(LOG_PATH, DEVICE, "main"):
-        MAIN_NETWORK.load_state_dict(main_dict)
-    if target_dict := get_trained_model(LOG_PATH, DEVICE, "target"):
-        TARGET_NETWORK.load_state_dict(target_dict)
+    if data := get_trained_model(LOG_PATH, DEVICE, "main"):
+        MAIN_NETWORK.load_state_dict(data[0])
+        loaded_model = data[1]
+    if data := get_trained_model(LOG_PATH, DEVICE, "target"):
+        TARGET_NETWORK.load_state_dict(data[0])
+        loaded_model = data[1]

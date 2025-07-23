@@ -30,8 +30,7 @@ static int nn_socket = -1;
 static struct sockaddr_in nn_server_addr;
 static bool nn_initialized = false;
 // double ev_map
-map <size_t, double> ev_map; // 盤面の評価値をキャッシュするためのマップ
-
+map<size_t, double> ev_map; // 盤面の評価値をキャッシュするためのマップ
 
 void save_ev_map(const string &filename)
 {
@@ -160,12 +159,13 @@ inline double calcEv(const int *board)
   if (!nn_initialized)
   {
     init_nn_socket();
-    load_ev_map("./ev_map.db"); 
+    load_ev_map("./ev_map.db");
   }
   // 盤面のハッシュ値を計算
   size_t hvalue = hashBoard(board);
   // キャッシュに評価値があればそれを返す
-  if (ev_map.find(hvalue) != ev_map.end()) {
+  if (ev_map.find(hvalue) != ev_map.end())
+  {
     return ev_map[hvalue];
   }
 
@@ -203,7 +203,7 @@ inline double calcEv(const int *board)
         double evaluation_value = response_json["evaluation"].get<double>();
         // キャッシュに評価値を保存
         ev_map[hvalue] = evaluation_value;
-        
+
         return evaluation_value;
       }
       else if (response_json.contains("error"))

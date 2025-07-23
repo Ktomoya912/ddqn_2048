@@ -10,6 +10,7 @@ import torch
 from arg import args, game_conf
 
 logger = logging.getLogger(__name__)
+loaded_model = ""
 
 try:
     exec(f"from models import {args.model} as modeler")
@@ -22,6 +23,7 @@ except ImportError as e:
 
 
 def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
+    global loaded_model
     pat = r"(\w+_)*(\-?\d*_)?(\[.*\]_)*\d{8}T\d{6}_"
     config_stem = re.sub(pat, "", log_path.stem)
     target = [
@@ -39,9 +41,12 @@ def get_trained_model(log_path: Path, device, type_: str) -> OrderedDict:
             model_file for model_file in target if args.load_script in model_file.name
         ]
         if not target:
-            logger.warning(f"Model file with script {args.load_script} not found: {config_stem}")
+            logger.warning(
+                f"Model file with script {args.load_script} not found: {config_stem}"
+            )
             return
     state_dict = torch.load(target[-1], map_location=device, weights_only=True)
+    loaded_model = target[-1].stem.replace(f"{type_}_", "")
     logger.info(f"Model loaded: {target[-1]}")
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():

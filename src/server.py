@@ -2,14 +2,16 @@
 import json  # 配列のシリアライズ/デシリアライズにJSONを使用
 import logging
 import socket
+from pathlib import Path
 
 import numpy as np
 import torch
 
 from common import write_make_input
-from config_2048 import DEVICE, MAIN_NETWORK
+from config_2048 import DEVICE, MAIN_NETWORK, loaded_model
 
 logger = logging.getLogger(__name__)
+root = Path(__file__).resolve().parent
 
 HOST = "127.0.0.1"  # localhost
 PORT = 65432  # Arbitrary non-privileged port
@@ -31,9 +33,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     with conn:
         logger.info(f"Connected by {addr}")
         while True:
-            data = conn.recv(
-                4096
-            )  # 受信バッファを大きくする（JSON文字列が長くなる可能性を考慮）
+            # 受信バッファを大きくする（JSON文字列が長くなる可能性を考慮）
+            data = conn.recv(4096)
             if not data:
                 break
 
@@ -56,5 +57,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             except Exception as e:
                 logger.info(f"An error occurred: {e}")
                 conn.sendall(json.dumps({"error": str(e)}).encode("utf-8"))
+    board_data_dir = root / "board_data"
+    tmp_dir = board_data_dir / "MCTS" / "tmp"
+    # リネームする
+    tmp_dir.rename(board_data_dir / "MCTS" / loaded_model)
 
 logger.info("Python server disconnected.")
